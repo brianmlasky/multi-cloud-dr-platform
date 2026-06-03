@@ -1,27 +1,18 @@
 # NorthStar Commerce — Multi-Cloud Disaster Recovery Platform
+*Architectural Objective: Mission-Critical Resilience & Automated Business Continuity*
 
-[![Terraform](https://img.shields.io/badge/Terraform-1.7-purple?logo=terraform)](https://www.terraform.io/)
-[![AWS](https://img.shields.io/badge/AWS-ECS%20%7C%20RDS%20%7C%20Route53-orange?logo=amazonaws)](https://aws.amazon.com/)
-[![GCP](https://img.shields.io/badge/GCP-Cloud%20Run%20%7C%20Cloud%20SQL-blue?logo=googlecloud)](https://cloud.google.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15.4-blue?logo=postgresql)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+## Executive Summary
+This platform demonstrates a production-grade multi-cloud DR architecture designed for high-availability commerce environments. The solution solves the "Disaster Recovery Gap" by integrating automated DNS failover with cross-cloud data replication, achieving an RTO of < 60 seconds and an RPO of < 5 minutes. 
 
-> **Production-grade multi-cloud disaster recovery platform** demonstrating automated failover
-> from AWS (primary) to GCP (secondary) with validated RTO < 60 seconds and RPO < 5 minutes.
+## Architectural Value
+- **Resilience Strategy:** Decouples primary compute (AWS) from secondary recovery (GCP) to protect against cloud-region or provider-wide outages.
+- **Automated Governance:** Failover and sync operations are encapsulated in hardened scripts with immutable logging.
+- **Fiscal Optimization:** Secondary compute (Cloud Run) is kept in a "warm-standby" state, optimizing cloud spend while guaranteeing recovery capability.
+- **Compliance Readiness:** Operations are logged and versioned, supporting rapid audit cycles and post-incident forensic analysis.
 
----
-
-## Table of Contents
-
-- [Architecture Overview](#architecture-overview)
-- [DR Metrics](#dr-metrics)
-- [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Failover Sequence](#failover-sequence)
-- [Database Sync](#database-sync)
-- [DR Runbook](#dr-runbook)
-- [Cost Profile](#cost-profile)
-- [Build Log](#build-log)
+## Strategic Decision Records (ADRs)
+- *Ref: [ADR-DR-001: Choosing Cross-Cloud Replication vs. Managed Databases](./docs/adr/ADR-001-DR-Strategy.md)*
+- *Ref: [ADR-DR-002: Failover Automation vs. Human-in-the-Loop](./docs/adr/ADR-002-Failover-Automation.md)*
 
 ---
 
