@@ -1,0 +1,1 @@
+alias k-logs='kubectl logs -l app=sagc-controller -n agentic'
