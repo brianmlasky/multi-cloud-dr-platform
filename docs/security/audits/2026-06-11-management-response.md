@@ -2,37 +2,28 @@
 
 **Author:** Brian Lasky, Senior Site Reliability Engineer & Cloud Architect
 **Date:** June 11, 2026
-**Framework:** SOC2 Type II / AWS Well-Architected
+**Framework:** SOC2 Type II / ISO 27001 / AWS Well-Architected
 
 ## Executive Summary
-This document outlines the architectural decisions made in response to the June 11 Adversarial Audit. As the Principal Architect bridging CTO resilience requirements (4-Hour RTO) and CFO fiscal constraints (< 5% idle cost), findings were evaluated strictly against business impact.
+This document outlines the architectural decisions made in response to the June 11 Adversarial Audit. Every finding has been explicitly evaluated and assigned a disposition status: **Remediated** (code applied), **Deferred** (tracked for Phase 2), or **Risk Accepted** (formally accepted by business).
 
-## Decision Matrix
+## Comprehensive Decision Matrix
 
-### 1. ACCEPTED & REMEDIATED
-**Finding 1.2: GCS State Backend SPOF**
-* **Assessment:** The auditor correctly identified that hosting the Terraform state on the primary cloud (GCP) creates a correlated failure loop during a disaster.
-* **Action:** Remediated in PR/Commit. State migrated to AWS S3 with DynamoDB locking.
+### CATEGORY 1: CRITICAL REMEDIATIONS (APPLIED)
+* **Finding 1.2 (GCS State Backend SPOF):** REMEDIATED. State migrated to AWS S3 with DynamoDB locking to prevent correlated failure during a GCP control plane outage.
+* **Finding 2.1 (DMS Encryption In-Transit):** REMEDIATED. Enforced `ssl_mode = "verify-full"` on AWS DMS endpoints to satisfy SOC2 CC6.7.
+* **Finding 2.2 (OIDC Subject Claim Wildcarding):** REMEDIATED. GitHub Actions trust policy hardened to require the explicit `dr-production` environment claim.
+* **Finding 4.1 (RDS Modification Breaches RTO):** REMEDIATED. RDS target pre-sized to `db.r6g.large`. To maintain FinOps constraints, it remains Single-AZ while idle and is manually modified to Multi-AZ post-failover.
+* **Finding 1.3 (VPC Endpoints Missing):** REMEDIATED. S3 and DynamoDB Gateway Endpoints implemented to ensure state and container registry access survive potential NAT gateway degradation.
 
-**Finding 2.1: DMS Encryption In-Transit Gap**
-* **Assessment:** Valid SOC2 CC6.7 violation.
-* **Action:** Remediated. Enforced `ssl_mode = "verify-full"` on the AWS DMS endpoints.
+### CATEGORY 2: DEFERRED (PHASE 2 BACKLOG)
+* **Finding 1.5 & 4.2 (Cluster Autoscaler Inefficiency):** DEFERRED. Karpenter is architecturally superior for emergency mass-provisioning. However, Cluster Autoscaler is mathematically sufficient for a 4-Hour RTO. Karpenter implementation is logged for Q3.
+* **Finding 1.4 (Route 53 Health Check Ambiguity):** DEFERRED. Synthetic transaction monitoring (AWS Synthetics Canaries) will replace standard HTTP health checks in Phase 2 to prevent false-positive failover triggers.
+* **Finding 2.4 (Audit Logging Incomplete):** DEFERRED. Full SOC2 CC7.2 CloudTrail/SIEM integration requires deployment of the enterprise security logging account, which is out of scope for this foundational module.
+* **Finding 2.3 (Data Residency/Sovereignty):** DEFERRED. KMS envelope encryption for EKS secrets will be implemented in the next Kubernetes manifest update.
+* **Finding 3.2 (DNS TTL Strategy):** DEFERRED. A pre-failover runbook step to reduce Route 53 TTLs from 300s to 60s will be automated via a Lambda function in Phase 2.
+* **Finding 4.3 (EC2 API Limits):** DEFERRED. AWS On-Demand Capacity Reservations (ODCRs) will be evaluated in the next fiscal quarter to guarantee t3/m5 capacity during a correlated regional disaster.
 
-**Finding 2.2: OIDC Subject Claim Wildcarding**
-* **Assessment:** Valid privilege escalation vector. 
-* **Action:** Remediated. GitHub Actions trust policy hardened to require the explicit `dr-production` environment claim.
-
-### 2. ACCEPTED WITH MODIFICATION
-**Finding 4.1: RDS Modification Breaches RTO**
-* **Assessment:** The auditor correctly identified that scaling from `t3.micro` to a production class during failover could take 90-180 minutes, threatening the 4-Hour RTO.
-* **Action:** Modified. We accept the recommendation to pre-size the instance to `db.r6g.large`. However, to maintain the CFO's FinOps constraint, we reject the auditor's suggestion to make it Multi-AZ while idle. It remains Single-AZ to minimize run-rate, and will be modified to Multi-AZ *post-failover* once traffic is stabilized.
-
-### 3. DEFERRED (PHASE 2 OPTIMIZATION)
-**Finding 4.2: Replace Cluster Autoscaler with Karpenter**
-* **Assessment:** Karpenter is architecturally superior for emergency mass-provisioning.
-* **Action:** Deferred. Ripping out the standard EKS managed node groups to implement Karpenter introduces unacceptable Day-1 delivery delays. The Cluster Autoscaler is mathematically sufficient for a 4-Hour RTO. Karpenter is logged as the primary Q3 platform optimization target.
-
-### 4. REJECTED (ACCEPTED BUSINESS RISK)
-**Finding 1.1: Single NAT Gateway is a SPOF**
-* **Assessment:** The auditor flagged the single NAT gateway as a reliability risk.
-* **Action:** Rejected. The single NAT gateway was an explicit FinOps decision. For a Tier 2 workload, the statistical probability of the specific AWS Availability Zone hosting the NAT gateway failing *at the exact same moment* as the GCP primary region is astronomically low. The cost of redundant NAT gateways (~$70/month) violates the Pilot Light budget constraint for an edge-case risk. The business accepts this risk.
+### CATEGORY 3: ACCEPTED BUSINESS RISK
+* **Finding 1.1 (Single NAT Gateway SPOF):** RISK ACCEPTED. The statistical probability of the specific AWS Availability Zone hosting the NAT gateway failing concurrently with the GCP primary region is exceptionally low. The $70/month cost to eliminate this risk violates the Pilot Light FinOps mandate.
+* **Finding 3.1 (Manual Split-Brain Human Error):** RISK ACCEPTED. The auditor correctly notes a healed network partition during manual promotion causes data divergence. We accept this operational risk because fully automated split-brain resolution (requiring multi-master conflict resolution) introduces unacceptable latency to the Tier 2 primary workload.
