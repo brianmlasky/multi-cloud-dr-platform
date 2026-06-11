@@ -33,3 +33,19 @@ module "vpc" {
     "kubernetes.io/role/internal-elb" = 1
   }
 }
+
+# AUDIT FIX: Gateway Endpoints ensure S3 and DynamoDB traffic (Terraform State & ECR layers)
+# never traverse the single NAT gateway, preventing scale-up failure.
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = "com.amazonaws.us-west-2.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.vpc.private_route_table_ids
+}
+
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = "com.amazonaws.us-west-2.dynamodb"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.vpc.private_route_table_ids
+}
