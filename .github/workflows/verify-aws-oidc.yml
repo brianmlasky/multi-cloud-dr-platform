@@ -1,0 +1,28 @@
+name: "Verify AWS OIDC Bridge"
+
+on:
+  workflow_dispatch: # Allows manual triggering from the GitHub UI
+
+permissions:
+  id-token: write   # Required for requesting the JWT from GitHub
+  contents: read    # Required for actions/checkout
+
+jobs:
+  verify-identity:
+    name: "Test AWS STS AssumeRole"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Note: Replace YOUR_AWS_ACCOUNT_ID with your actual 12-digit AWS account number
+          role-to-assume: arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/github-actions-dr-deployer
+          aws-region: us-west-2
+
+      - name: Verify Identity
+        run: |
+          echo "Testing AWS STS get-caller-identity..."
+          aws sts get-caller-identity
