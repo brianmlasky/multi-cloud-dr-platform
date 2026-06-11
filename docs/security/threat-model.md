@@ -6,3 +6,4 @@
 3. **Cross-Cloud Lateral Movement:** Mitigated via strict CIDR isolation preventing overlapping IP space.
 4. **EKS Control Plane Exposure:** The Kubernetes API server must be protected from public internet scanning. Mitigated by enabling VPC-only private endpoint access for worker nodes, restricting public endpoint access to the CI/CD execution IPs (GitHub Actions).
 5. **Container Escape:** Mitigated by enforcing AWS IAM Roles for Service Accounts (IRSA) rather than attaching broad IAM permissions directly to the underlying EC2 worker nodes.
+6. **Data Interception in Transit:** Cross-cloud database replication exposes transaction logs to the public internet. Mitigated by enforcing strict TLS/SSL encryption on the AWS DMS endpoints and requiring certificate validation for the GCP source connection.
